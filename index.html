@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background: #000;
+    color: #ff0066;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+  }
+  
+  .terminal {
+    position: relative;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: #000;
+  }
+  
+  .scanline {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: rgba(255, 0, 102, 0.3);
+    animation: scan 6s linear infinite;
+    z-index: 10;
+  }
+  
+  @keyframes scan {
+    0% { top: 0; }
+    100% { top: 100%; }
+  }
+  
+  .ascii-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    white-space: pre;
+    font-family: monospace;
+    font-size: 10px;
+    line-height: 10px;
+    text-align: center;
+    mix-blend-mode: screen;
+  }
+  
+  .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.8) 100%);
+    pointer-events: none;
+    z-index: 2;
+  }
+  
+  .message {
+    position: absolute;
+    font-family: "Courier New", monospace;
+    font-size: 24px;
+    color: #ff0066;
+    text-align: center;
+    width: 100%;
+    mix-blend-mode: exclusion;
+    animation: glitch 0.3s infinite;
+  }
+  
+  .top-message {
+    top: 20px;
+  }
+  
+  .bottom-message {
+    bottom: 20px;
+  }
+  
+  @keyframes glitch {
+    0% { transform: translate(0); filter: hue-rotate(0deg); }
+    20% { transform: translate(-2px, 2px); filter: hue-rotate(90deg); }
+    40% { transform: translate(-2px, -2px); filter: hue-rotate(180deg); }
+    60% { transform: translate(2px, 2px); filter: hue-rotate(270deg); }
+    80% { transform: translate(2px, -2px); filter: hue-rotate(360deg); }
+    100% { transform: translate(0); filter: hue-rotate(0deg); }
+  }
+  
+  .at-field {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,0,102,0.1), rgba(255,0,102,0));
+    animation: atfield 4s ease infinite;
+    z-index: 1;
+  }
+  
+  @keyframes atfield {
+    0% { opacity: 0.1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 0.1; }
+  }
+
+  .frame {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 5px 10px;
+    border: 1px solid #ff0066;
+    color: #ff0066;
+    font-family: monospace;
+    font-size: 12px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% { border-color: #ff0066; }
+    50% { border-color: #ff006600; }
+    100% { border-color: #ff0066; }
+  }
+
+  .noise {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4wIIChcxmzQBDwAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAF7UlEQVRo3u1aaXLbRhB9M1gEQGi5bMlJ5CRO/Sf3yB3yJ6ly7kR2LMnaKYkLgFnyx0CQKFmiessurvivor status=0x800000000;
+    opacity: 0.1;
+    pointer-events: none;
+    z-index: 3;
+  }
+</style>
+</head>
+<body>
+<div class="terminal">
+  <div class="scanline"></div>
+  <div class="at-field"></div>
+  <div class="noise"></div>
+  <div class="overlay"></div>
+  
+  <div class="message top-message" id="top-message">PATTERN TYPE: BLOOD</div>
+  <div class="ascii-container" id="ascii-screen"></div>
+  <div class="message bottom-message" id="bottom-message">SYNCHRONIZATION RATE: 87.5%</div>
+  
+  <div class="frame" id="frame-counter">FRAME: 0000</div>
+</div>
+
+<script>
+const messages = [
+  "PATTERN TYPE: BLOOD",
+  "AT FIELD DETECTED",
+  "SYNCHRONIZATION CRITICAL",
+  "HUMAN INSTRUMENTALITY PROJECT",
+  "TERMINAL DOGMA BREACHED",
+  "LILITH AWAKENING",
+  "THE BEAST",
+  "IT ALL RETURNS TO NOTHING",
+  "EVERYTHING IS PROCEEDING AS PLANNED",
+  "GOD'S IN HIS HEAVEN",
+  "ALL'S RIGHT WITH THE WORLD"
+];
+
+const bottomMessages = [
+  "SYNCHRONIZATION RATE: 87.5%",
+  "LCL PRESSURE NOMINAL",
+  "EGO BORDER: ABSOLUTE",
+  "METAPHYSICAL BIOLOGY STABLE",
+  "MAGI SYSTEM: MELCHIOR ONLINE",
+  "EVANGELION UNIT-01: ACTIVATED",
+  "S2 ENGINE: OPERATIONAL",
+  "DUMMY PLUG: STANDBY"
+];
+
+// Generate abstract patterns
+function generateAbstractPattern(frame) {
+  const characters = '▀▄█▌▐░▒▓■□▢▣▤▥▦▧▨▩▪▫▬▭▮▯▰▱▲▼◄►◆◇○●◐◑◒◓◔◕';
+  const width = 80;
+  const height = 30;
+  let pattern = '';
+  
+  // Create different pattern types based on frame number
+  const patternType = Math.floor(frame / 100) % 4;
+  
+  switch(patternType) {
+    case 0: // Spiral pattern
+      for(let y = 0; y < height; y++) {
+        for(let x = 0; x < width; x++) {
+          const distance = Math.sqrt(Math.pow(x - width/2, 2) + Math.pow(y - height/2, 2));
+          const angle = Math.atan2(y - height/2, x - width/2);
+          const index = Math.floor((distance + angle + frame * 0.1) % characters.length);
+          pattern += characters[index];
+        }
+        pattern += '\n';
+      }
+      break;
+      
+    case 1: // Mandala pattern
+      for(let y = 0; y < height; y++) {
+        for(let x = 0; x < width; x++) {
+          const dx = x - width/2;
+          const dy = y - height/2;
+          const distance = Math.sqrt(dx*dx + dy*dy);
+          const angle = Math.atan2(dy, dx) * 8;
+          const index = Math.floor((distance + angle + frame * 0.1) % characters.length);
+          pattern += characters[index];
+        }
+        pattern += '\n';
+      }
+      break;
+      
+    case 2: // Wave interference pattern
+      for(let y = 0; y < height; y++) {
+        for(let x = 0; x < width; x++) {
+          const value = Math.sin(x * 0.2 + frame * 0.1) * Math.cos(y * 0.2 + frame * 0.08);
+          const index = Math.floor((value + 1) * characters.length / 2);
+          pattern += characters[index % characters.length];
+        }
+        pattern += '\n';
+      }
+      break;
+      
+    case 3: // Abstract face/mask pattern
+      for(let y = 0; y < height; y++) {
+        for(let x = 0; x < width; x++) {
+          const dx = x - width/2;
+          const dy = y - height/2;
+          const distance = Math.sqrt(dx*dx + dy*dy);
+          const angle = Math.atan2(dy, dx);
+          const value = Math.sin(distance * 0.3 + angle * 3 + frame * 0.1);
+          const index = Math.floor((value + 1) * characters.length / 2);
+          pattern += characters[index % characters.length];
+        }
+        pattern += '\n';
+      }
+      break;
+  }
+  
+  return pattern;
+}
+
+// Initialize animation
+let currentFrame = 0;
+const asciiScreen = document.getElementById('ascii-screen');
+const frameCounter = document.getElementById('frame-counter');
+const topMessage = document.getElementById('top-message');
+const bottomMessage = document.getElementById('bottom-message');
+
+function updateFrame() {
+  currentFrame++;
+  
+  // Update frame counter
+  frameCounter.textContent = `FRAME: ${currentFrame.toString().padStart(4, '0')}`;
+  
+  // Generate and display current frame
+  const pattern = generateAbstractPattern(currentFrame);
+  asciiScreen.textContent = pattern;
+  
+  // Update messages periodically
+  if(currentFrame % 50 === 0) {
+    topMessage.textContent = messages[Math.floor(Math.random() * messages.length)];
+    bottomMessage.textContent = bottomMessages[Math.floor(Math.random() * bottomMessages.length)];
+    
+    // Add extra glitch effect during message changes
+    asciiScreen.style.animation = 'glitch 0.2s infinite';
+    setTimeout(() => {
+      asciiScreen.style.animation = '';
+    }, 500);
+  }
+  
+  // Random glitch effects
+  if(Math.random() < 0.01) {
+    document.body.style.filter = `hue-rotate(${Math.random() * 360}deg)`;
+    setTimeout(() => {
+      document.body.style.filter = '';
+    }, 100);
+  }
+}
+
+// Start animation
+setInterval(updateFrame, 1000/15); // 15 FPS
+
+// Initial frame
+updateFrame();
+</script>
+</body>
+</html>
